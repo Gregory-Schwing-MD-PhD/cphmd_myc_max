@@ -36,9 +36,15 @@ RUN mkdir cphmd_tutorial && cd cphmd_tutorial && \
 # --- Stage 2: Final Runtime Image ---
 FROM ubuntu:22.04
 
+# UPDATE: Added python3, python3-pip, and git (git often needed by pip for some installs)
 RUN apt-get update && apt-get install -y \
     libgfortran5 liblapack3 libblas3 libgomp1 perl \
+    python3 python3-pip git \
     && rm -rf /var/lib/apt/lists/*
+
+# UPDATE: Install Python Scientific Libraries
+# Note: nglview is excluded because it requires a GUI/Jupyter and won't work in this script
+RUN pip3 install --no-cache-dir numpy scipy MDAnalysis mdtraj
 
 # Create directories
 RUN mkdir -p /opt/charmm /opt/mmtsb
@@ -48,7 +54,7 @@ COPY --from=builder /build/source/bin /opt/charmm/bin
 COPY --from=builder /build/source/lib /opt/charmm/lib
 COPY --from=builder /build/source/toppar /opt/charmm/toppar
 
-# Copy the specific CPHMD file (Keeping Original Name)
+# Copy the specific CPHMD file
 COPY --from=builder /build/cphmd_tutorial/hphmd_charmm/toppar/toppar_phmd_c22.str /opt/charmm/toppar/toppar_phmd_c22.str
 
 # Copy MMTSB Toolset from builder
@@ -56,15 +62,12 @@ COPY --from=builder /build/toolset /opt/mmtsb
 
 # --- Configuration & Environment Variables ---
 
-# 1. MMTSB Specifics
 ENV MMTSBDIR="/opt/mmtsb"
 ENV PATH="/opt/mmtsb/perl:/opt/mmtsb/bin:/opt/charmm/bin:${PATH}"
 
-# 2. CHARMM Specifics
 ENV CHARMMEXEC="/opt/charmm/bin/charmm"
 ENV CHARMMDATA="/opt/charmm/toppar"
 
-# 3. Legacy/Standard CHARMM Variables
 ENV CHM_HOME="/opt/charmm"
 ENV TOPPAR="/opt/charmm/toppar"
 ENV LD_LIBRARY_PATH="/opt/charmm/lib"

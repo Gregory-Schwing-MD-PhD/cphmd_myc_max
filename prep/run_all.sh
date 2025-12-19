@@ -6,8 +6,10 @@ CURRENT_DIR=$(pwd)
 
 # --- Check for Docker Image ---
 if [[ "$(docker images -q $IMAGE 2> /dev/null)" == "" ]]; then
-  echo "Image $IMAGE not found locally. Pulling now..."
-  docker pull $IMAGE
+  echo "Image $IMAGE not found locally. Pulling/Building required..."
+  # If you just built it locally, it will be found here.
+  # If you need to pull it from a registry, uncomment the line below:
+  # docker pull $IMAGE
 else
   echo "Image $IMAGE found locally. Proceeding..."
 fi
@@ -35,6 +37,7 @@ run_in_docker "bash ./myc_step3_fix_charmm_pdb_for_amber.sh"
 run_in_docker "bash ./max_step3_fix_charmm_pdb_for_amber.sh"
 
 # --- Step 4: Combine PDBs, align ---
-run_in_docker "python myc_max_alignment_preproc.py"
+# Updated to use python3
+run_in_docker "python3 myc_max_alignment_preproc.py"
 
 echo "All steps complete."
