@@ -6,29 +6,29 @@
 
 import MDAnalysis as mda
 from MDAnalysis.analysis import align
-from MDAnalysis.tests.datafiles import CRD, PSF, DCD, DCD2
-import nglview as nv
+#from MDAnalysis.tests.datafiles import CRD, PSF, DCD, DCD2
+#import nglview as nv
 
 
 # In[4]:
 
 
 myc_rcsb = mda.Universe("myc_amber.pdb")
-nv.show_mdanalysis(myc_rcsb)
+#nv.show_mdanalysis(myc_rcsb)
 
 
 # In[5]:
 
 
 max_rcsb = mda.Universe("max_amber.pdb")
-nv.show_mdanalysis(max_rcsb)
+#nv.show_mdanalysis(max_rcsb)
 
 
 # In[6]:
 
 
 merged = mda.Merge(myc_rcsb.atoms, max_rcsb.atoms)
-nv.show_mdanalysis(merged)
+#nv.show_mdanalysis(merged)
 
 from MDAnalysis.coordinates.PDB import PDBWriter
 # Define the output PDB file
@@ -109,8 +109,8 @@ print(f"Written aligned and rotated structure: {output_pdb}")
 # In[30]:
 
 
-myc_max_amber_rotated = mda.Universe(output_pdb)
-nv.show_mdanalysis(myc_max_amber_rotated)
+#myc_max_amber_rotated = mda.Universe(output_pdb)
+#nv.show_mdanalysis(myc_max_amber_rotated)
 
 
 # In[ ]:
