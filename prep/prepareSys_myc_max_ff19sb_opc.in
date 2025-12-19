@@ -1,0 +1,26 @@
+# Solvate model compound 
+source leaprc.protein.ff19SB                               # Load protein
+#source leaprc.gaff
+source leaprc.water.opc
+
+set default PBradii mbondi
+
+
+loadamberparams frcmod.phmd
+loadoff phmd.lib
+
+model = loadpdb myc_max_amber_rotated.pdb                      # Load PDB 
+
+solvateoct model OPCBOX 15 0.75   
+
+charge model 										   # Gives charge (k), need to add ions: r = (num_water)*0.15/56
+
+addions model Na+ 18                                   # num_Na = r - k/2
+addions model Cl- 19                                   # num_Cl = r + k/2
+
+charge model                                   
+
+savepdb model myc_max_cphmd.pdb
+saveamberparm model myc_max_cphmd.prmtop myc_max_cphmd.rst7
+
+quit 
