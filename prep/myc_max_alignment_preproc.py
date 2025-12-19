@@ -1,54 +1,65 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
-
-
 import MDAnalysis as mda
 from MDAnalysis.analysis import align
-#from MDAnalysis.tests.datafiles import CRD, PSF, DCD, DCD2
-#import nglview as nv
-
-
-# In[4]:
-
-
-myc_rcsb = mda.Universe("myc_amber.pdb")
-#nv.show_mdanalysis(myc_rcsb)
-
-
-# In[5]:
-
-
-max_rcsb = mda.Universe("max_amber.pdb")
-#nv.show_mdanalysis(max_rcsb)
-
-
-# In[6]:
-
-
-merged = mda.Merge(myc_rcsb.atoms, max_rcsb.atoms)
-#nv.show_mdanalysis(merged)
-
 from MDAnalysis.coordinates.PDB import PDBWriter
-# Define the output PDB file
-output_pdb_file = "myc_max_amber.pdb"
-
-# Create a PDBWriter object to write the PDB file
-with PDBWriter(output_pdb_file) as writer:
-    # Write only the first frame
-    merged.trajectory[0]  # Access the first frame
-    writer.write(merged.atoms)  # Write atoms to the PDB file
-
-print(f"Frame written to {output_pdb_file}")
-
-
-# In[28]:
-
-
 import numpy as np
 import mdtraj as md
 from scipy.spatial.transform import Rotation as R
+import warnings
+
+# Suppress warnings to keep output clean
+warnings.filterwarnings('ignore')
+
+# ---------------------------------------------------------
+# Part 1: Load, Renumber, Rename Chains/Segments, and Merge
+# ---------------------------------------------------------
+
+myc_rcsb = mda.Universe("myc_amber.pdb")
+max_rcsb = mda.Universe("max_amber.pdb")
+
+# 1. RENUMBER RESIDUES
+# ---------------------------------------------------------
+# Get the last residue number from Myc to calculate the offset
+offset = myc_rcsb.residues.resids[-1]
+
+# Apply offset to Max RESIDUES so numbering continues after Myc
+max_rcsb.residues.resids += offset
+
+
+# 2. ASSIGN SEGMENT IDs (MYC / MAX)
+# ---------------------------------------------------------
+# We set this on the .segments group to satisfy MDAnalysis hierarchy
+myc_rcsb.atoms.segments.segids = ['MYC'] * len(myc_rcsb.atoms.segments)
+max_rcsb.atoms.segments.segids = ['MAX'] * len(max_rcsb.atoms.segments)
+
+
+# 3. ASSIGN CHAIN IDs (A / B)
+# ---------------------------------------------------------
+# We use add_TopologyAttr to safely force assignment to all atoms
+myc_rcsb.add_TopologyAttr('chainID', ['A'] * len(myc_rcsb.atoms))
+max_rcsb.add_TopologyAttr('chainID', ['B'] * len(max_rcsb.atoms))
+
+
+# 4. MERGE AND WRITE
+# ---------------------------------------------------------
+merged = mda.Merge(myc_rcsb.atoms, max_rcsb.atoms)
+
+output_pdb_file = "myc_max_amber.pdb"
+
+with PDBWriter(output_pdb_file) as writer:
+    merged.trajectory[0]  # Access the first frame
+    writer.write(merged.atoms)
+
+print(f"Merged frame written to {output_pdb_file}")
+print(f"Myc: Chain A, Seg MYC (Residues 1-{offset})")
+print(f"Max: Chain B, Seg MAX (Residues {offset+1}-{max_rcsb.residues.resids[-1]})")
+
+
+# ---------------------------------------------------------
+# Part 2: PCA Rotation (Unchanged)
+# ---------------------------------------------------------
 
 def load_pdb(file_path):
     """Load PDB file and extract atomic coordinates."""
@@ -84,10 +95,7 @@ def write_pdb(coords, original_pdb, output_pdb):
     traj.xyz[0] = coords
     traj.save(output_pdb)
 
-
-# In[29]:
-
-
+# Perform the rotation on the newly merged file
 coords = load_pdb(output_pdb_file)
 principal_axes = compute_principal_axes(coords)
 
@@ -104,23 +112,3 @@ final_coords = rotate_by_90_degrees_y(aligned_coords)
 output_pdb = "myc_max_amber_rotated.pdb"
 write_pdb(final_coords, output_pdb_file, output_pdb)
 print(f"Written aligned and rotated structure: {output_pdb}")
-
-
-# In[30]:
-
-
-#myc_max_amber_rotated = mda.Universe(output_pdb)
-#nv.show_mdanalysis(myc_max_amber_rotated)
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
