@@ -1,0 +1,168 @@
+* ADD H, FIX TERMINI, Short MINI in GB with constraints
+* 
+
+set in  = max_fixed
+set out = @{in}_h
+set segid = PROB
+
+random uniform
+faster on
+
+! Read topology and parameter files
+! ---------------------------------
+stream toppar_phmd_read.str
+
+
+! Read SEQU
+! -----------------------------------
+open unit 1 read form name @in.pdb
+read sequ pdb unit 1
+
+! Capping groups
+! --------------
+gene @segid warn first ACE last CT2 setup
+
+
+! patch dummy atoms for ASP and GLU
+! ---------------------------------
+define ANY sele bynu 1 end
+set res1 = ?selresi         ! get the starting value of resid
+calc reslast = ?selresi + ?nres -1
+
+set ires @res1
+label patch
+ define residue sele segid @segid .and. resid @ires show end
+ if ?selresn eq asp patch aspp2 @segid @ires
+ if ?selresn eq glu patch glup2 @segid @ires
+ incr ires
+if ires le @reslast goto patch
+
+AUTOGEN ANGLes DIHEd
+
+
+
+
+!READ COOR
+!------------------------------------
+open read card unit 1 name @in.pdb
+read coor pdb unit 1 resid
+close unit 1
+
+
+! Add disulfide bonds 
+! --------------------
+!define ANY sele bynu 1 end
+!set res1 = ?selresi         ! get the starting value of resid
+!calc reslast = ?selresi + ?nres -1
+
+set ires @res1
+label disu
+define residue sele segid @segid .and. resid @ires show end
+if ?selresn .eq. CYS then
+  coor mind sele resi @ires .and. type S* end sele type S* end
+  if ?MINDA1 .lt. ?MINDA2 then
+     if ?mind .lt. 2.5 then
+        define res sele segid @segid .and. bynu ?MINDA1 show end
+        set resa = ?SELIRES
+        define res sele segid @segid .and. bynu ?MINDA2 show end
+        set resb = ?SELIRES
+        patch disu @segid @resa @segid @resb 
+     endif
+  endif
+endif
+incr ires
+if ires le @reslast goto disu
+
+coor print
+
+ic para
+ic build
+
+coor print
+
+! Build hydrogens
+! --------------
+HBUIld
+
+! Edit Dihedrals for Glupp2 and Aspp2
+!------------------------------------
+!prnlev -1
+
+set nasp = 0
+set nglu = 0
+define ANY sele bynu 1 end
+set res1 = ?selresi         ! get the starting value of resid
+calc reslast = ?selresi + ?nres -1
+
+IC GENE
+IC FILL
+
+set ires @res1
+label edit
+ define residue sele segid @segid .and. resid @ires show end
+ if ?selresn eq asp then
+    incr nasp
+    IC EDIT
+       DIHE @segid @ires CB @segid @ires CG @segid @ires OD1 @segid @ires HD1 180.0
+       DIHE @segid @ires CB @segid @ires CG @segid @ires OD2 @segid @ires HD2 180.0
+    END
+ endif
+ if ?selresn eq glu then
+    incr nglu
+    IC EDIT
+       DIHE @segid @ires CG @segid @ires CD @segid @ires OE1 @segid @ires HE1 180.0
+       DIHE @segid @ires CG @segid @ires CD @segid @ires OE2 @segid @ires HE2 180.0
+    END
+ endif
+ incr ires
+if ires le @reslast goto edit
+
+if @nasp .gt. 0 then
+coor init sele segi @segid .and. resn asp .and. type hd* end
+endif
+if @nglu .gt. 0 then
+coor init sele segi @segid .and. resn glu .and. type he* end
+endif
+
+IC build
+
+! Minimize structure in vacuum
+! ----------------------------
+set ctonnb = 16
+set ctofnb = 16
+set cutnb = 20
+
+set para atom switch cdie vdw vswitch -
+         ctonnb @ctonnb ctofnb @ctofnb cutnb @cutnb
+
+NBOND @para
+
+Energy
+
+cons harm force 10.0 sele .not. type H* end
+mini   sd nstep  10 nprint 10 step 0.005
+
+cons harm clear
+cons harm force 5.0 sele .not. type H* end
+mini   sd nstep  10 nprint 10 step 0.005
+mini abnr nstep  20 nprint 10 step 0.005
+
+!cons harm clear 
+!mini abnr nstep  20 nprint 10 step 0.005
+
+! ! Write coordinate file
+! ! --------------
+
+open unit 1 write card name @out.pdb
+write coor pdb unit 1 
+close unit 1
+
+open unit 1 card write name @out.psf
+write psf card unit 1 card
+close unit 1
+
+open unit 1 card write name @out.crd
+write coor card unit 1 card
+close unit 1
+
+stop
