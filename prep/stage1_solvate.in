@@ -1,0 +1,20 @@
+# stage1_solvate.in
+source leaprc.protein.ff19SB
+source leaprc.water.opc
+
+# Load CPHMD params (ensure these files are in your dir or standard path)
+loadamberparams frcmod.phmd
+loadoff phmd.lib
+
+# Set radii for PB calculations
+set default PBradii mbondi
+
+# Load the protein prepared by pdb4amber
+model = loadpdb myc_max_ph75.pdb
+
+# Solvate (15.0 Angstrom buffer, 0.75 closeness)
+# We save this ONLY to count waters for the 0.15M calculation
+solvateOct model OPCBOX 15 0.75
+
+savePdb model temp_solvated.pdb
+quit
