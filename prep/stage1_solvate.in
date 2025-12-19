@@ -1,18 +1,14 @@
 # stage1_solvate.in
 source leaprc.protein.ff19SB
 source leaprc.water.opc
-
 loadamberparams frcmod.phmd
 loadoff phmd.lib
 set default PBradii mbondi
 
-# Load the protein (output from the alignment script + sed clean)
+# Load PDB (HD1 atoms must be removed by sed first)
 model = loadpdb myc_max_amber_rotated.pdb
 
-# CRITICAL: Print charge to log for the Python script to read
-charge model
-
-# Solvate to count waters
+# Solvate (15.0 Angstrom buffer)
 solvateOct model OPCBOX 15 0.75
 
 savePdb model temp_solvated.pdb
