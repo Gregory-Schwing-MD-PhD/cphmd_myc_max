@@ -2,18 +2,17 @@
 source leaprc.protein.ff19SB
 source leaprc.water.opc
 
-# Load CPHMD params (ensure these files are in your dir or standard path)
 loadamberparams frcmod.phmd
 loadoff phmd.lib
-
-# Set radii for PB calculations
 set default PBradii mbondi
 
-# Load the protein prepared by pdb4amber
-model = loadpdb myc_max_ph75.pdb
+# Load the protein (output from the alignment script + sed clean)
+model = loadpdb myc_max_amber_rotated.pdb
 
-# Solvate (15.0 Angstrom buffer, 0.75 closeness)
-# We save this ONLY to count waters for the 0.15M calculation
+# CRITICAL: Print charge to log for the Python script to read
+charge model
+
+# Solvate to count waters
 solvateOct model OPCBOX 15 0.75
 
 savePdb model temp_solvated.pdb
